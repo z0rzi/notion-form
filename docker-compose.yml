@@ -1,0 +1,38 @@
+version: "3.3"
+
+services:
+  front:
+    build:
+      context: ./front
+    volumes:
+      - front_build:/dist/
+    working_dir: /app
+    command: cp -r /app/dist/ /
+
+  back:
+    build:
+      context: ./back
+    volumes:
+      - ./back/prompts.sqlite:/app/prompts.sqlite
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.diagadis.loadbalancer.server.port=8080"
+    volumes:
+      - front_build:/front:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - ./nginx/.htpasswd:/etc/nginx/conf.d/.htpasswd:ro
+    ports:
+      - 80:8080
+      - 8000:8080
+    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+    restart: always
+    depends_on: [front]
+
+volumes:
+  front_build:
