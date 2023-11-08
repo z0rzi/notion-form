@@ -46,11 +46,7 @@ export default class PromptDeamon {
         const prompt = this.updateQueue.shift();
         if (!prompt) return;
 
-        this.notionHelper.updatePrompt(
-            prompt.id,
-            prompt.rating,
-            prompt.rating_amount
-        );
+        this.notionHelper.updatePrompt(prompt.id, prompt.ratings);
     }
 
     /**
@@ -65,7 +61,7 @@ export default class PromptDeamon {
             this.db.prepare('DELETE FROM prompts').run();
 
             const stmt = this.db.prepare(
-                'INSERT INTO prompts (id, text, category, rating, rating_amount) VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO prompts (id, text, category, ratings) VALUES (?, ?, ?, ?)'
             );
 
             prompts.forEach((prompt) => {
@@ -78,8 +74,7 @@ export default class PromptDeamon {
                     prompt.id,
                     prompt.text,
                     prompt.category,
-                    prompt.rating,
-                    prompt.rating_amount
+                    prompt.ratings.join(',')
                 );
             });
         });

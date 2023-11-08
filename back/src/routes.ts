@@ -37,7 +37,9 @@ routes.get('/prompt', (req: Request, res: Response) => {
 
     // Putting the less rated ones first
     unratedPrompts.sort((a, b) => {
-        return a.rating_amount - b.rating_amount;
+        const aRatingAmount = a.ratings.reduce((acc, curr) => acc + curr, 0);
+        const bRatingAmount = b.ratings.reduce((acc, curr) => acc + curr, 0);
+        return aRatingAmount - bRatingAmount;
     });
 
     if (!unratedPrompts.length) {
@@ -63,7 +65,7 @@ routes.put('/prompt/:id', (req: Request, res: Response) => {
 
     // Is the rating valid?
     const rating = +req.body.rating;
-    if (isNaN(rating) || rating == null || rating < 0 || rating > 5) {
+    if (isNaN(rating) || rating == null || rating < 1 || rating > 5) {
         res.status(400).send('Invalid rating');
         return;
     }

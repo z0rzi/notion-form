@@ -25,7 +25,27 @@ type NotionProperty = {
         type: string;
         number: number;
     };
-    'Rating amount': {
+    '#1': {
+        id: string;
+        type: string;
+        number: number;
+    };
+    '#2': {
+        id: string;
+        type: string;
+        number: number;
+    };
+    '#3': {
+        id: string;
+        type: string;
+        number: number;
+    };
+    '#4': {
+        id: string;
+        type: string;
+        number: number;
+    };
+    '#5': {
         id: string;
         type: string;
         number: number;
@@ -38,11 +58,6 @@ type NotionProperty = {
             name: string;
             color: string;
         };
-    };
-    Rating: {
-        id: string;
-        type: string;
-        number: number;
     };
     Prompt: {
         id: string;
@@ -71,8 +86,7 @@ export type Prompt = {
     id: string;
     text: string;
     category: string;
-    rating: number;
-    rating_amount: number;
+    ratings: number[];
 };
 
 // Tutorial: https://developers.notion.com/docs/create-a-notion-integration#step-3-save-the-database-id
@@ -89,6 +103,20 @@ export default class NotionHelper {
         this.notion = new Client({
             auth: config.notion_secret
         });
+    }
+
+    private parsePromptRatings(properties: NotionProperty): number[] {
+        const out: number[] = [];
+        for (let i = 1; i <= 5; i++) {
+            const key = `#${i}` as '#1';
+            const rating = properties[key].number;
+            if (isNaN(rating) || !rating) {
+                out.push(0);
+            } else {
+                out.push(rating);
+            }
+        }
+        return out;
     }
 
     /**
@@ -113,14 +141,17 @@ export default class NotionHelper {
                 properties: NotionProperty;
             };
 
-            let category = properlyTypedRes.properties.Category.select.name;
-            let rating = +properlyTypedRes.properties.Rating.number;
-            let rating_amount =
-                +properlyTypedRes.properties['Rating amount'].number;
+            const ratings = this.parsePromptRatings(
+                properlyTypedRes.properties
+            );
 
+            let category = '';
+            try {
+                category = properlyTypedRes.properties.Category.select.name;
+            } catch (e) {
+                category = '';
+            }
             if (!category) category = '';
-            if (isNaN(rating)) rating = 0;
-            if (isNaN(rating_amount)) rating_amount = 0;
 
             try {
                 const title = properlyTypedRes.properties.Prompt.title;
@@ -128,8 +159,7 @@ export default class NotionHelper {
                     id: res.id,
                     text: title[0].plain_text,
                     category,
-                    rating,
-                    rating_amount
+                    ratings: ratings
                 };
             } catch (e) {
                 return null;
@@ -139,7 +169,7 @@ export default class NotionHelper {
         return prompts.filter((prompt) => prompt !== null) as Prompt[];
     }
 
-    async updatePrompt(id: string, rating: number, rating_amount: number) {
+    async updatePrompt_old(id: string, rating: number, rating_amount: number) {
         await this.notion.pages.update({
             page_id: id,
             properties: {
@@ -150,6 +180,22 @@ export default class NotionHelper {
                     number: rating_amount
                 }
             }
+        });
+    }
+
+    /**
+     * Updates a prompt in Notion
+     */
+    async updatePrompt(id: string, ratings: number[]) {
+        const properties = {} as Record<string, { number: number }>;
+        for (let i = 1; i <= 5; i++) {
+            properties[`#${i}`] = {
+                number: ratings[i - 1]
+            };
+        }
+        await this.notion.pages.update({
+            page_id: id,
+            properties
         });
     }
 }

@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS prompts (
     id text PRIMARY KEY,
     text text NOT NULL,
     category text,
-    rating integer,
-    rating_amount integer
+    ratings text
 );
 
 CREATE TABLE IF NOT EXISTS users (
