@@ -1,15 +1,12 @@
 import { Client } from '@notionhq/client';
 import config from './config';
+import { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 type NotionProperty = {
-    Status: {
+    Corrected: {
         id: string;
         type: string;
-        select: {
-            id: string;
-            name: string;
-            color: string;
-        };
+        checkbox: boolean;
     };
     Category: {
         id: string;
@@ -87,6 +84,7 @@ export type Prompt = {
     text: string;
     category: string;
     ratings: number[];
+    corrected?: boolean;
 };
 
 // Tutorial: https://developers.notion.com/docs/create-a-notion-integration#step-3-save-the-database-id
@@ -128,11 +126,23 @@ export default class NotionHelper {
                 'Notion database ID not found. Please set NOTION_DB_ID in your .env file.'
             );
         }
-        const promptPage = await this.notion.databases.query({
-            database_id: config.notion_database_id
-        });
+        let rawPrompts = [] as QueryDatabaseResponse['results'];
+        let nextCursor = null as string | null;
+        while (true) {
+            const res =  await this.notion.databases.query({
+                database_id: config.notion_database_id,
+                // expanding the limit
+                page_size: 100,
+                start_cursor: nextCursor || undefined
+            });
+            nextCursor = res.next_cursor;
+            rawPrompts.push(...res.results);
+            if (!res.has_more) break;
+        }
 
-        const prompts: (Prompt | null)[] = promptPage.results.map((res) => {
+        console.log('Retrieved %d prompts from notion', rawPrompts.length);
+
+        const prompts: (Prompt | null)[] = rawPrompts.map((res) => {
             if (res.object !== 'page') {
                 return null;
             }
@@ -140,6 +150,8 @@ export default class NotionHelper {
             const properlyTypedRes = res as unknown as {
                 properties: NotionProperty;
             };
+
+            const corrected = properlyTypedRes.properties.Corrected.checkbox;
 
             const ratings = this.parsePromptRatings(
                 properlyTypedRes.properties
@@ -159,7 +171,8 @@ export default class NotionHelper {
                     id: res.id,
                     text: title[0].plain_text,
                     category,
-                    ratings: ratings
+                    ratings,
+                    corrected
                 };
             } catch (e) {
                 return null;
@@ -169,24 +182,10 @@ export default class NotionHelper {
         return prompts.filter((prompt) => prompt !== null) as Prompt[];
     }
 
-    async updatePrompt_old(id: string, rating: number, rating_amount: number) {
-        await this.notion.pages.update({
-            page_id: id,
-            properties: {
-                Rating: {
-                    number: rating
-                },
-                'Rating amount': {
-                    number: rating_amount
-                }
-            }
-        });
-    }
-
     /**
      * Updates a prompt in Notion
      */
-    async updatePrompt(id: string, ratings: number[]) {
+    async updatePromptRating(id: string, ratings: number[]) {
         const properties = {} as Record<string, { number: number }>;
         for (let i = 1; i <= 5; i++) {
             properties[`#${i}`] = {
@@ -196,6 +195,34 @@ export default class NotionHelper {
         await this.notion.pages.update({
             page_id: id,
             properties
+        });
+    }
+    async enrichPrompt(
+        id: string,
+        prompt: string,
+        category: string,
+        deapth: number
+    ) {
+        await this.notion.pages.update({
+            page_id: id,
+            properties: {
+                Prompt: {
+                    // @ts-ignore
+                    title: [{ type: 'text', text: { content: prompt } }]
+                },
+                Category: {
+                    // @ts-ignore
+                    select: { name: category.toLowerCase() }
+                },
+                'Depth /10': {
+                    // @ts-ignore
+                    number: deapth
+                },
+                Corrected: {
+                    // @ts-ignore
+                    checkbox: true
+                }
+            }
         });
     }
 }

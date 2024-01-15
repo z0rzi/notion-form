@@ -35,6 +35,8 @@ const App: Component = () => {
     setPrompt({ text: "Loading...", category: "", id: "" });
     api.getPrompt().then((prompt) => {
       setPrompt(prompt);
+    }).catch(() => {
+      setPrompt({ text: "Error loading prompt", category: "", id: "" });
     });
   });
 

@@ -6,9 +6,12 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.13",
+    "@types/fast-levenshtein": "^0.0.4",
     "better-sqlite3": "^9.0.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "fast-levenshtein": "^3.0.0",
+    "openai": "3.3.0",
     "ts-node": "^10.9.1",
     "tslib": "^2.6.2"
   },

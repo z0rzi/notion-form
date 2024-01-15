@@ -46,7 +46,7 @@ export default class PromptDeamon {
         const prompt = this.updateQueue.shift();
         if (!prompt) return;
 
-        this.notionHelper.updatePrompt(prompt.id, prompt.ratings);
+        this.notionHelper.updatePromptRating(prompt.id, prompt.ratings);
     }
 
     /**
