@@ -19,18 +19,16 @@ services:
     restart: always
 
   nginx:
-    image: nginx:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.diagadis.loadbalancer.server.port=8080"
+    build: ./nginx
     volumes:
-      - front_build:/front:ro
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
-      - ./nginx/.htpasswd:/etc/nginx/conf.d/.htpasswd:ro
+      - front_build:/html/:ro
+      - /var/ssl/:/ssl/:ro
+      - /tmp/nginx_logs/:/var/log/nginx/rw
+
     ports:
-      - 80:8080
-      - 8000:8080
-    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+      - 80:80
+      - 443:443
+
     restart: always
     depends_on: [front]
 
