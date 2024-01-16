@@ -36,7 +36,13 @@ export class Api {
     return this.userId;
   }
 
-  async getPrompt(): Promise<Prompt | null> {
+  private checkPrompt(prompt: Prompt): boolean {
+    return prompt?.text?.length > 0 && prompt?.category?.length > 0;
+  }
+
+  async getPrompt(_retries = 5): Promise<Prompt | null> {
+    if (_retries === 0) return null;
+
     const userId = await this.getUserId();
 
     try {
@@ -44,19 +50,33 @@ export class Api {
         headers: { "x-user-id": userId },
       });
 
+      if (!this.checkPrompt(res.data)) {
+        return this.getPrompt(_retries - 1);
+      }
+
       return res.data;
     } catch (e) {
-      return null;
+      return this.getPrompt(_retries - 1);
     }
   }
 
-  async ratePrompt(promptId: string, rating: number): Promise<void> {
+  async ratePrompt(
+    promptId: string,
+    rating: number,
+    _retries = 5
+  ): Promise<void> {
+    if (_retries === 0) return;
+
     const userId = await this.getUserId();
 
-    await axios.put(
-      config.apiUrl + "/prompt/" + promptId,
-      { rating },
-      { headers: { "x-user-id": userId } }
-    );
+    await axios
+      .put(
+        config.apiUrl + "/prompt/" + promptId,
+        { rating },
+        { headers: { "x-user-id": userId } }
+      )
+      .catch(() => {
+        this.ratePrompt(promptId, rating, _retries - 1);
+      });
   }
 }
