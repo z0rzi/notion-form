@@ -143,7 +143,7 @@ export default function (props: {
 
   const categorySlug =
     props.prompt.category.toLowerCase().replace(/[^a-z]/g, "_") || "default";
-  const imagePath = `/src/assets/inkie_${categorySlug}.png`;
+  const imagePath = `/inkie_${categorySlug}.png`;
 
   const cardColor = categoriesColors[categorySlug] || categoriesColors.default;
 
