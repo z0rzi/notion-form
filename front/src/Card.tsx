@@ -14,12 +14,15 @@ const categoriesColors: Record<string, string> = {
 const Container = styled.div`
   @media (max-width: 350px) {
     font-size: 8px;
+    aspect-ratio: 11 / 16;
   }
   @media (min-width: 350px) and (max-width: 500px) {
+    aspect-ratio: 11 / 11;
     font-size: 12px;
   }
   font-size: 15px;
 
+  aspect-ratio: 16 / 11;
   position: absolute;
   background: #f5f5f5;
   top: 50%;
@@ -27,7 +30,6 @@ const Container = styled.div`
   transform: translate(-50%, -50%);
   width: 100%;
   max-width: 500px;
-  aspect-ratio: 16 / 11;
   border-radius: 20px;
   box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1);
 
@@ -41,7 +43,7 @@ const Container = styled.div`
 
 const CardDecoration = styled.div<{ color: string }>`
   height: 5em;
-  margin: 10px;
+  margin: 0 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -61,7 +63,7 @@ const CardDecoration = styled.div<{ color: string }>`
 `;
 
 const PromptContainer = styled.div`
-  margin: 0 50px;
+  margin: 0 20%;
   font-size: 1.5em;
 `;
 
