@@ -22,6 +22,7 @@ const Container = styled.div`
   }
   font-size: 15px;
 
+  padding: 15px;
   aspect-ratio: 16 / 11;
   position: absolute;
   background: #f5f5f5;
