@@ -12,12 +12,21 @@ const categoriesColors: Record<string, string> = {
 };
 
 const Container = styled.div`
+  @media (max-width: 350px) {
+    font-size: 8px;
+  }
+  @media (min-width: 350px) and (max-width: 500px) {
+    font-size: 12px;
+  }
+  font-size: 15px;
+
   position: absolute;
   background: #f5f5f5;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  height: 100%;
+  width: 100%;
+  max-width: 500px;
   aspect-ratio: 16 / 11;
   border-radius: 20px;
   box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1);
@@ -31,7 +40,7 @@ const Container = styled.div`
 `;
 
 const CardDecoration = styled.div<{ color: string }>`
-  height: 100px;
+  height: 5em;
   margin: 10px;
   display: flex;
   justify-content: space-between;
@@ -39,7 +48,7 @@ const CardDecoration = styled.div<{ color: string }>`
 
   hr {
     background: ${(props) => props.color || categoriesColors.default};
-    height: 5px;
+    height: 0.3em;
     border-radius: 5px;
     border: none;
     width: 100%;
@@ -84,7 +93,10 @@ export default function (props: {
   //
   // Adding the grabbing listeners
   //
-  function onMove(e: MouseEvent) {
+  function onTouchMove(e: TouchEvent) {
+    onMove(e.touches[0]);
+  }
+  function onMove(e: MouseEvent | Touch) {
     if (!domCard) return;
 
     const offsetX = e.clientX - startPos.x;
@@ -98,15 +110,21 @@ export default function (props: {
       offsetX / 30
     }deg)`;
   }
-  function onGrab(e: MouseEvent) {
+  function onGrab(e: MouseEvent | Touch) {
     domCard = findDomCard(e.target as HTMLDivElement);
 
     startPos = { x: e.clientX, y: e.clientY };
 
     document.addEventListener("mousemove", onMove);
+    document.addEventListener("touchmove", onTouchMove);
     document.addEventListener("mouseup", onRelease);
+    document.addEventListener("touchend", onTouchEnd);
   }
-  function onRelease(e: MouseEvent) {
+
+  function onTouchEnd(e: TouchEvent) {
+    onRelease(e.changedTouches[0]);
+  }
+  function onRelease(e: MouseEvent | Touch) {
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onRelease);
 
@@ -116,8 +134,9 @@ export default function (props: {
     const offsetY = e.clientY - startPos.y;
 
     const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2);
+    const screenWidth = window.innerWidth;
 
-    if (distance > 300) {
+    if (distance > screenWidth / 3) {
       // Card has been swiped, we have to send it off the screen
       domCard.style.transition = "transform 0.5s";
       domCard.style.transform = `translate(${offsetX * 5}px, ${
@@ -151,6 +170,7 @@ export default function (props: {
     <Container
       class="card"
       onMouseDown={onGrab}
+      onTouchStart={(e) => onGrab(e.touches[0])}
       style={{ "z-index": props.zIndex }}
     >
       <CardDecoration color={cardColor}>

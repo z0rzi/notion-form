@@ -10,20 +10,21 @@ const Container = styled.div`
   display: flex;
   text-align: center;
   height: 100%;
+  width: 100%;
   flex-direction: column;
   font-family: Open Sans, sans-serif;
   color: #3e4655;
   font-weight: 500;
-  font-size: 19px;
+  font-size: 15px;
   margin: auto;
   overflow: hidden;
 `;
 
 const CardsContainer = styled.div`
-  margin: auto;
+  margin: auto 5%;
   position: relative;
   height: 100%;
-  width: 100%;
+  width: 90%;
   max-height: 500px;
 `;
 
