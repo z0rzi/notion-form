@@ -29,7 +29,7 @@ const Container = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
   border-radius: 20px;
   box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1);
 
@@ -63,7 +63,7 @@ const CardDecoration = styled.div<{ color: string }>`
 `;
 
 const PromptContainer = styled.div`
-  margin: 0 20%;
+  margin: 0 10%;
   font-size: 1.5em;
 `;
 
@@ -129,6 +129,8 @@ export default function (props: {
   function onRelease(e: MouseEvent | Touch) {
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onRelease);
+    document.removeEventListener("touchmove", onTouchMove);
+    document.removeEventListener("touchend", onTouchEnd);
 
     if (!domCard) return;
 
@@ -141,7 +143,7 @@ export default function (props: {
     if (distance > screenWidth / 3) {
       // Card has been swiped, we have to send it off the screen
       domCard.style.transition = "transform 0.5s";
-      domCard.style.transform = `translate(${offsetX * 5}px, ${
+      domCard.style.transform = `translate(-50%, -50%) translate(${offsetX * 5}px, ${
         offsetY * 5
       }px) scale(1.2) rotate(${offsetX / 30}deg)`;
 
