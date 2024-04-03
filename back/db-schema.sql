@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS prompts (
     id text PRIMARY KEY,
     text text NOT NULL,
     category text,
-    ratings text
+    timesUsed number,
+    timesSkipped number
 );
 
 CREATE TABLE IF NOT EXISTS users (

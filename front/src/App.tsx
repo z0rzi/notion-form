@@ -1,7 +1,7 @@
 import { Component, Show, createEffect, createSignal } from "solid-js";
 import { styled } from "solid-styled-components";
 
-import PromptForm from "./PromptForm";
+import Card from "./Card";
 import { Api, Prompt } from "./api";
 
 const PROMPT_TRANSITION_DURATION = 300;
@@ -11,115 +11,79 @@ const Container = styled.div`
   text-align: center;
   height: 100%;
   flex-direction: column;
-  max-width: 1000px;
   font-family: Open Sans, sans-serif;
-  color: #3E4655;
+  color: #3e4655;
   font-weight: 500;
   font-size: 19px;
   margin: auto;
+  overflow: hidden;
 `;
 
-const PromptFormContainer = styled.div`
-  transition-duration: ${() => PROMPT_TRANSITION_DURATION}ms;
+const CardsContainer = styled.div`
+  margin: auto;
   position: relative;
-  flex-grow: 1;
+  height: 100%;
+  width: 100%;
+  max-height: 500px;
 `;
 
 const App: Component = () => {
-  const [prompt, setPrompt] = createSignal(null as Prompt | null);
-  const [promptOpacity, setPromptOpacity] = createSignal(1);
-  const [ratedAmount, setRatedAmount] = createSignal(0);
+  const [prompts, setPrompts] = createSignal([] as Prompt[]);
+  const [errMessage, setErrMessage] = createSignal("");
   const api = Api.getInstance();
 
   createEffect(() => {
-    setPrompt({ text: "Loading...", category: "", id: "" });
-    api.getPrompt().then((prompt) => {
-      setPrompt(prompt);
-    }).catch(() => {
-      setPrompt({ text: "Error loading prompt", category: "", id: "" });
-    });
-  });
+    console.log('fetching init prompts');
+    api
+      .getPrompts(3)
+      .then((prompts) => {
+        if (prompts) setPrompts(prompts);
+      })
+      .catch(() => {
+        setPrompts([]);
+        setErrMessage("Failed to load prompts... 😢");
+      });
+  }, []);
 
-  function onRatePrompt(prompt: Prompt | null, rating: number) {
+  function onPromptSwipe(prompt: Prompt | null, action: "use" | "skip") {
     if (!prompt) return;
 
-    setPromptOpacity(0);
+    const promptsIds = prompts().map(p => p.id);
 
-    const apiPromise = api.ratePrompt(prompt.id, rating);
+    const seePromptPromise = api.promptSeen(prompt.id, action);
     const transitionPromise = new Promise((resolve) =>
       setTimeout(resolve, PROMPT_TRANSITION_DURATION)
     );
+    console.log('fetching prompts');
+    const newPrompts = prompts().filter((p) => p.id !== prompt.id);
 
-    Promise.all([apiPromise, transitionPromise]).then(() => {
-      setPromptOpacity(1);
-      api.getPrompt().then((prompt) => {
-        setPrompt(prompt);
-        setRatedAmount(ratedAmount() + 1);
-      });
+    const getPromptPromise = api.getPrompts(1, promptsIds).then((apiPrompts) => {
+      if (apiPrompts) {
+        newPrompts.push(apiPrompts[0]);
+      }
+    })
+
+    Promise.all([seePromptPromise, transitionPromise, getPromptPromise]).then(() => {
+      setPrompts(newPrompts);
     });
   }
 
   return (
     <Container>
-      <Show when={prompt() != null}>
-        <div style={{ padding: "30px", "font-size": '.9rem' }}>
-          For each prompt, rate <b>how likely you are</b> to use it in your next
-          journaling session.
-        </div>
-        <PromptFormContainer style={{ opacity: promptOpacity() }}>
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              width: "100%",
-              transform: "translateY(-50%)",
-            }}
-          >
-            <div
-              style={{
-                opacity: 0.5,
-                "font-style": "italic",
-                "font-size": ".8rem",
-              }}
-            >
-              {prompt()?.category?.toUpperCase()}
-            </div>
-            <PromptForm
-              prompt={prompt() as Prompt}
-              onRate={(rating) => onRatePrompt(prompt(), rating)}
-            ></PromptForm>
-          </div>
-        </PromptFormContainer>
-        <div
-          style={{
-            padding: "30px",
-            opacity: ratedAmount() >= 5 ? 0.5 : 0,
-            transition: "opacity 1s ease-in-out",
-            "font-size": ".9rem",
-          }}
-        >
-          You can stop at any point 😉
-        </div>
+      <Show when={!errMessage()}>
+        <CardsContainer>
+          {prompts().map((prompt, idx) => (
+              <Card
+                zIndex={prompts().length - idx}
+                prompt={prompt}
+                onSwipe={(action) => onPromptSwipe(prompt, action)}
+                inFront={idx === 0}
+              ></Card>
+          ))}
+        </CardsContainer>
       </Show>
-      <Show when={prompt() == null}>
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "5%",
-            width: "90%",
-            transform: "translateY(-50%)",
-          }}
-        >
-          <p>🎉 You're all done! 🎉</p>
-          <br />
-          <p>Thanks a lot for your help!</p>
-          <br />
-          <p style={{ "font-size": ".8rem", opacity: 0.5 }}>
-            You can come back in a few days, maybe there will be new prompts for
-            you to rate 😉
-          </p>
-        </div>
+      <Show when={errMessage()}>
+        <div>{errMessage()}</div>
       </Show>
     </Container>
   );

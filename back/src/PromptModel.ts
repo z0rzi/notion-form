@@ -2,7 +2,7 @@ import { getDB } from './Db';
 import PromptDeamon from './PromptDeamon';
 import { Prompt } from './notion-helper';
 
-type RawPrompt = Prompt & { ratings: string };
+type RawPrompt = Prompt;
 
 export class PromptModel {
     private db = getDB();
@@ -10,10 +10,7 @@ export class PromptModel {
     private deamon = PromptDeamon.getInstance();
 
     private parseRawPrompt(prompt: RawPrompt): Prompt {
-        return {
-            ...prompt,
-            ratings: prompt.ratings.split(',').map(Number)
-        };
+        return { ...prompt };
     }
 
     /**
@@ -31,20 +28,25 @@ export class PromptModel {
         return this.parseRawPrompt(prompt);
     }
 
-    /**
-     * Rate a prompt
-     *
-     * @param id The prompt id
-     * @param rating The rating, from 1 to 5
-     */
-    ratePrompt(id: string, rating: number): void {
-        const oldRating = this.getPrompt(id).ratings;
-        oldRating[rating - 1]++;
+    usePrompt(id: string): void {
         const stmt = this.db.prepare(
-            'UPDATE prompts SET ratings = ? WHERE id = ? RETURNING *'
+            'UPDATE prompts SET timesUsed = timesUsed + 1 WHERE id = ?'
         );
-        const prompt = stmt.get(oldRating.join(','), id) as RawPrompt;
+        stmt.run(id);
 
-        this.deamon.addUpdate(this.parseRawPrompt(prompt));
+        const prompt = this.getPrompt(id);
+
+        this.deamon.addUpdate(prompt);
+    }
+
+    skipPrompt(id: string): void {
+        const stmt = this.db.prepare(
+            'UPDATE prompts SET timesSkipped = timesSkipped + 1 WHERE id = ?'
+        );
+        stmt.run(id);
+
+        const prompt = this.getPrompt(id);
+
+        this.deamon.addUpdate(prompt);
     }
 }

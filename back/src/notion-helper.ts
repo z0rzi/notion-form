@@ -22,27 +22,12 @@ type NotionProperty = {
         type: string;
         number: number;
     };
-    '#1': {
+    TimesSkipped: {
         id: string;
         type: string;
         number: number;
     };
-    '#2': {
-        id: string;
-        type: string;
-        number: number;
-    };
-    '#3': {
-        id: string;
-        type: string;
-        number: number;
-    };
-    '#4': {
-        id: string;
-        type: string;
-        number: number;
-    };
-    '#5': {
+    TimesUsed: {
         id: string;
         type: string;
         number: number;
@@ -83,7 +68,8 @@ export type Prompt = {
     id: string;
     text: string;
     category: string;
-    ratings: number[];
+    timesUsed: number;
+    timesSkipped: number;
     corrected?: boolean;
 };
 
@@ -103,20 +89,6 @@ export default class NotionHelper {
         });
     }
 
-    private parsePromptRatings(properties: NotionProperty): number[] {
-        const out: number[] = [];
-        for (let i = 1; i <= 5; i++) {
-            const key = `#${i}` as '#1';
-            const rating = properties[key].number;
-            if (isNaN(rating) || !rating) {
-                out.push(0);
-            } else {
-                out.push(rating);
-            }
-        }
-        return out;
-    }
-
     /**
      * Gets all the prompts from the Notion database
      */
@@ -129,7 +101,7 @@ export default class NotionHelper {
         let rawPrompts = [] as QueryDatabaseResponse['results'];
         let nextCursor = null as string | null;
         while (true) {
-            const res =  await this.notion.databases.query({
+            const res = await this.notion.databases.query({
                 database_id: config.notion_database_id,
                 // expanding the limit
                 page_size: 100,
@@ -153,10 +125,6 @@ export default class NotionHelper {
 
             const corrected = properlyTypedRes.properties.Corrected.checkbox;
 
-            const ratings = this.parsePromptRatings(
-                properlyTypedRes.properties
-            );
-
             let category = '';
             try {
                 category = properlyTypedRes.properties.Category.select.name;
@@ -165,13 +133,18 @@ export default class NotionHelper {
             }
             if (!category) category = '';
 
+            const timesUsed = properlyTypedRes.properties.TimesUsed.number || 0;
+            const timesSkipped =
+                properlyTypedRes.properties.TimesSkipped.number || 0;
+
             try {
                 const title = properlyTypedRes.properties.Prompt.title;
                 return {
                     id: res.id,
                     text: title[0].plain_text,
                     category,
-                    ratings,
+                    timesUsed,
+                    timesSkipped,
                     corrected
                 };
             } catch (e) {
@@ -183,20 +156,24 @@ export default class NotionHelper {
     }
 
     /**
-     * Updates a prompt in Notion
+     * Updates the usage of a prompt in Notion (times used and times skipped)
      */
-    async updatePromptRating(id: string, ratings: number[]) {
-        const properties = {} as Record<string, { number: number }>;
-        for (let i = 1; i <= 5; i++) {
-            properties[`#${i}`] = {
-                number: ratings[i - 1]
-            };
-        }
+    async updatePromptUsage(
+        id: string,
+        usage: { used: number; skipped: number }
+    ) {
         await this.notion.pages.update({
             page_id: id,
-            properties
+            properties: {
+                TimesUsed: { number: usage.used },
+                TimesSkipped: { number: usage.skipped }
+            }
         });
     }
+
+    /**
+     * Modify the notion entry to rectify the prompt, category and depth
+     */
     async enrichPrompt(
         id: string,
         prompt: string,

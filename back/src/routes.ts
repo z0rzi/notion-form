@@ -18,44 +18,75 @@ routes.get('/user-id', (_req: Request, res: Response) => {
     return res.status(200).send(userId.toString());
 });
 
-routes.get('/prompt', (req: Request, res: Response) => {
+routes.get('/prompts', (req: Request, res: Response) => {
     const userId = extractUserId(req);
+    const amount = Number(req.query.amount) || 5;
+    const excludedPromptsRaw = req.query.exclude as string;
+    const excludedPromptsIds = [] as string[];
+    if (excludedPromptsRaw) {
+        excludedPromptsIds.push(...excludedPromptsRaw.split(','));
+    }
+
     if (!userId) {
         res.status(400).send('Missing user id in request header');
         return;
     }
 
     const userModel = new UserModel();
-    const ratedPrompts = userModel.getRatedPromptsFor(userId);
+    const seenPromptsIds = userModel.getSeenPromptsFor(userId);
+    seenPromptsIds.push(...excludedPromptsIds);
 
     const promptModel = new PromptModel();
     const allPrompts = promptModel.getAllPrompts();
 
-    const unratedPrompts = allPrompts.filter((prompt) => {
-        return !ratedPrompts.includes(prompt.id);
+    /** The prompts which haven't been seen yet by this user */
+    const unseenPrompts = allPrompts.filter((prompt) => {
+        return !seenPromptsIds.includes(prompt.id);
     });
+
+    if (!unseenPrompts.length) {
+        // All prompts have been already seen by the user.
+        // Let's return random prompts!
+
+        const shuffledPrompts = [...allPrompts];
+        shuffledPrompts.sort(() => Math.random() - 0.5);
+
+        const prompts = shuffledPrompts.slice(0, amount);
+
+        res.send(
+            prompts.map((prompt) => ({
+                id: prompt.id,
+                text: prompt.text,
+                category: prompt.category
+            }))
+        );
+    }
 
     // Putting the less rated ones first
-    unratedPrompts.sort((a, b) => {
-        const aRatingAmount = a.ratings.reduce((acc, curr) => acc + curr, 0);
-        const bRatingAmount = b.ratings.reduce((acc, curr) => acc + curr, 0);
-        return aRatingAmount - bRatingAmount;
+    unseenPrompts.sort((a, b) => {
+        const aSeenAmount = a.timesSkipped + a.timesUsed;
+        const bSeenAmount = b.timesSkipped + b.timesUsed;
+        return aSeenAmount - bSeenAmount;
     });
 
-    if (!unratedPrompts.length) {
+    if (!unseenPrompts.length) {
         // All prompts have been rated already
         res.status(404).send('No prompt found');
         return;
     }
 
-    res.send({
-        id: unratedPrompts[0].id,
-        text: unratedPrompts[0].text,
-        category: unratedPrompts[0].category
-    });
+    const prompts = unseenPrompts.slice(0, amount);
+
+    res.send(
+        prompts.map((prompt) => ({
+            id: prompt.id,
+            text: prompt.text,
+            category: prompt.category
+        }))
+    );
 });
 
-routes.put('/prompt/:id', (req: Request, res: Response) => {
+routes.put('/prompt/:id/:action(skip|use)', (req: Request, res: Response) => {
     // Is the user id valid?
     const userId = extractUserId(req);
     if (!userId) {
@@ -63,16 +94,18 @@ routes.put('/prompt/:id', (req: Request, res: Response) => {
         return;
     }
 
-    // Is the rating valid?
-    const rating = +req.body.rating;
-    if (isNaN(rating) || rating == null || rating < 1 || rating > 5) {
-        res.status(400).send('Invalid rating');
+    // Is the action valid?
+    const action = req.params.action;
+    if (action !== 'skip' && action !== 'use') {
+        res.status(400).send(
+            'Invalid action. Only "skip" or "use" are allowed'
+        );
         return;
     }
 
     // Has the prompt been rated already?
     const userModel = new UserModel();
-    const ratedPrompts = userModel.getRatedPromptsFor(userId);
+    const ratedPrompts = userModel.getSeenPromptsFor(userId);
 
     if (ratedPrompts.includes(req.params.id)) {
         res.status(400).send('This prompt has already been rated');
@@ -89,8 +122,13 @@ routes.put('/prompt/:id', (req: Request, res: Response) => {
     }
 
     // Everything OK. We can update the prompt
-    promptModel.ratePrompt(req.params.id, rating);
-    userModel.markPromptAsRatedFor(userId, req.params.id);
+    if (action === 'skip') {
+        promptModel.skipPrompt(req.params.id);
+    } else {
+        promptModel.usePrompt(req.params.id);
+    }
+
+    userModel.markPromptAsSeenFor(userId, req.params.id);
 
     res.status(200).send('Success');
 });

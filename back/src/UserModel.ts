@@ -28,7 +28,7 @@ export class UserModel {
         return id;
     }
 
-    getRatedPromptsFor(userId: number): string[] {
+    getSeenPromptsFor(userId: number): string[] {
         const allUsers = this.getAllUsers();
         const user = allUsers.find((user) => user.id === userId);
         if (!user) {
@@ -37,7 +37,7 @@ export class UserModel {
         return user.prompts;
     }
 
-    markPromptAsRatedFor(userId: number, promptId: string) {
+    markPromptAsSeenFor(userId: number, promptId: string) {
         const allUsers = this.getAllUsers();
         const user = allUsers.find((user) => user.id === userId);
         if (!user) {
