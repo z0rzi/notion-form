@@ -4,6 +4,11 @@ import path from 'path';
 
 const dirname = __dirname;
 
+const dbExists = fs.existsSync(path.join(dirname, '../prompts.sqlite'));
+if (!dbExists) {
+    fs.writeFileSync(path.join(dirname, '../prompts.sqlite'), '');
+}
+
 const db = new Database(
     path.join(dirname, '../prompts.sqlite'),
     // { verbose: console.log }
