@@ -1,4 +1,4 @@
-import axios from "axios";
+import BaseClient from "./BaseClient";
 import config from "./config";
 import Cookies from "js-cookie";
 
@@ -11,13 +11,17 @@ export type Prompt = {
 export class Api {
   private static _instance: Api;
   userId = null as number | null;
+  private static baseClient: BaseClient
 
   static getInstance(): Api {
-    if (!Api._instance) Api._instance = new Api();
+    if (!Api._instance) {
+      this.baseClient = new BaseClient(config.apiUrl)
+      Api._instance = new Api();
+    }
     return Api._instance;
   }
 
-  private constructor() {}
+  private constructor() { }
 
   async getUserId(): Promise<number> {
     if (this.userId) return this.userId;
@@ -27,7 +31,7 @@ export class Api {
       return this.userId;
     }
 
-    const res = await axios.get(config.apiUrl + "/user-id");
+    const res = await Api.baseClient.get(config.apiUrl + "/user-id");
 
     this.userId = +res.data;
 
@@ -65,7 +69,7 @@ export class Api {
     const userId = await this.getUserId();
 
     try {
-      const res = await axios.get(config.apiUrl + "/prompts", {
+      const res = await Api.baseClient.get(config.apiUrl + "/prompts", {
         params: { amount, exclude: idPromptsOnScreen.join(",") },
         headers: { "x-user-id": userId },
       });
@@ -91,12 +95,12 @@ export class Api {
 
     const userId = await this.getUserId();
 
-    await axios
-      .put(
-        config.apiUrl + "/prompt/" + promptId + "/" + action,
-        { used: true },
-        { headers: { "x-user-id": userId } }
-      )
+    await Api.baseClient
+    .put(
+      config.apiUrl + "/prompt/" + promptId + "/" + action,
+      { used: true },
+      { headers: { "x-user-id": userId } }
+    )
       .catch(() => {
         this.promptSeen(promptId, action, _retries - 1);
       });
