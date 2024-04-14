@@ -5,32 +5,22 @@ services:
     build:
       context: ./front
     volumes:
-      - front_build:/dist/
-    working_dir: /app
-    command: cp -r /app/dist/ /
+      front_build:/dist/
+  working_dir: /app
 
   back:
     build:
       context: ./back
-    volumes:
-      - ./back/prompts.sqlite:/app/prompts.sqlite
+    volumes:  
+      ./back/prompts.sqlite:/app/prompts.sqlite
+      ./front_build:./back/public
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
     restart: always
-
-  nginx:
-    build: ./nginx
-    volumes:
-      - front_build:/html/:ro
-      - /var/ssl/:/ssl/:ro
-      - /tmp/nginx_logs/:/var/log/nginx/rw
-
     ports:
-      - 80:80
-      - 443:443
-
-    restart: always
-    depends_on: [front]
+      - 8080:8080
+    depends_on:
+      front
 
 volumes:
   front_build:
