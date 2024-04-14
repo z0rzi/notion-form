@@ -2,6 +2,7 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 import routes from './routes';
 import PromptDeamon from './PromptDeamon';
+import path from "path"
 import { resetDb } from './Db';
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
@@ -13,13 +14,14 @@ app.use(cors());
 // To get IP address of the client
 app.set('trust proxy', true);
 
+app.use(express.static(path.join("public")));
 app.use((req: Request, _res: Response, next) => {
     // displaying the path of the request
     console.log(`>>> ${req.method} ${req.path}`);
     next();
 });
 
-app.use(routes);
+app.use("/api", routes);
 
 const proxy = createProxyMiddleware({
     target: process.env.VITE_DEV_SERVER,
@@ -27,8 +29,7 @@ const proxy = createProxyMiddleware({
     ws: true
 });
 
-app.use(express.static('/public'));
-app.get(
+app.use(
     '/',
     (_req, res, next) => {
         if (
@@ -39,7 +40,7 @@ app.get(
         ) {
             return next();
         }
-        res.sendFile('/index.html');
+        res.sendFile(path.join(__dirname,"..","public",'/index.html'));
     },
     proxy
 );
