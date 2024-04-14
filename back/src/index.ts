@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import routes from './routes';
 import PromptDeamon from './PromptDeamon';
 import { resetDb } from './Db';
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
@@ -19,6 +20,13 @@ app.use((req: Request, _res: Response, next) => {
 });
 
 app.use(routes);
+
+const proxy = createProxyMiddleware({
+  target: process.env.VITE_DEV_SERVER,
+  changeOrigin: true,
+  ws: true,
+});
+app.use('/', proxy);
 
 const deamon = PromptDeamon.getInstance();
 deamon.run();
