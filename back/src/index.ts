@@ -22,11 +22,27 @@ app.use((req: Request, _res: Response, next) => {
 app.use(routes);
 
 const proxy = createProxyMiddleware({
-  target: process.env.VITE_DEV_SERVER,
-  changeOrigin: true,
-  ws: true,
+    target: process.env.VITE_DEV_SERVER,
+    changeOrigin: true,
+    ws: true
 });
-app.use('/', proxy);
+
+app.use(express.static('/public'));
+app.get(
+    '/',
+    (_req, res, next) => {
+        if (
+            process.env.NODE_ENV &&
+            process.env.NODE_ENV === 'development' &&
+            process.env.USE_VITE_SERVER &&
+            process.env.USE_VITE_SERVER === 'true'
+        ) {
+            return next();
+        }
+        res.sendFile('/index.html');
+    },
+    proxy
+);
 
 const deamon = PromptDeamon.getInstance();
 deamon.run();
