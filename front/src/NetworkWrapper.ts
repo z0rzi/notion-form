@@ -1,4 +1,4 @@
-import axios, { Axios } from "axios";
+import axios, { Axios, AxiosRequestConfig } from "axios";
 
 /**
  * Class used to abstract the network layer
@@ -11,15 +11,15 @@ export default class NetworkWrapper {
         });
     }
 
-    async get(url: string, options?: any) {
+    async get(url: string, options?: AxiosRequestConfig) {
         return this.client.get(url, options);
     }
 
-    async post(url: string, data: any) {
+    async post(url: string, data: unknown) {
         return this.client.post(url, data);
     }
 
-    async put(url: string, data: any, config: any) {
+    async put(url: string, data: unknown, config: AxiosRequestConfig) {
         return this.client.put(url, data, config);
     }
 
