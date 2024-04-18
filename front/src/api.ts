@@ -1,4 +1,4 @@
-import BaseClient from "./BaseClient";
+import NetworkWrapper from "./NetworkWrapper";
 import config from "./config";
 import Cookies from "js-cookie";
 
@@ -11,11 +11,11 @@ export type Prompt = {
 export class Api {
   private static _instance: Api;
   userId = null as number | null;
-  private static baseClient: BaseClient
+  private static baseClient: NetworkWrapper
 
   static getInstance(): Api {
     if (!Api._instance) {
-      this.baseClient = new BaseClient(config.apiUrl)
+      this.baseClient = new NetworkWrapper(config.apiUrl)
       Api._instance = new Api();
     }
     return Api._instance;

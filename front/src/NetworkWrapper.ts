@@ -1,6 +1,9 @@
 import axios, { Axios } from "axios";
 
-export default class BaseClient {
+/**
+ * Class used to abstract the network layer
+ */
+export default class NetworkWrapper {
     private client: Axios
     constructor(baseURL: string) {
         this.client = axios.create({
