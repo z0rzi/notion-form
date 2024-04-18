@@ -11,17 +11,17 @@ export type Prompt = {
 export class Api {
   private static _instance: Api;
   userId = null as number | null;
-  private static baseClient: NetworkWrapper
+  private static network: NetworkWrapper;
 
   static getInstance(): Api {
     if (!Api._instance) {
-      this.baseClient = new NetworkWrapper(config.apiUrl)
+      this.network = new NetworkWrapper(config.apiUrl);
       Api._instance = new Api();
     }
     return Api._instance;
   }
 
-  private constructor() { }
+  private constructor() {}
 
   async getUserId(): Promise<number> {
     if (this.userId) return this.userId;
@@ -31,7 +31,7 @@ export class Api {
       return this.userId;
     }
 
-    const res = await Api.baseClient.get(config.apiUrl + "/user-id");
+    const res = await Api.network.get(config.apiUrl + "/user-id");
 
     this.userId = +res.data;
 
@@ -47,8 +47,7 @@ export class Api {
     if (!Array.isArray(prompts)) return false;
 
     for (const prompt of prompts) {
-      if (prompt?.text?.length === 0)
-        return false;
+      if (prompt?.text?.length === 0) return false;
     }
 
     return true;
@@ -69,7 +68,7 @@ export class Api {
     const userId = await this.getUserId();
 
     try {
-      const res = await Api.baseClient.get(config.apiUrl + "/prompts", {
+      const res = await Api.network.get(config.apiUrl + "/prompts", {
         params: { amount, exclude: idPromptsOnScreen.join(",") },
         headers: { "x-user-id": userId },
       });
@@ -81,7 +80,7 @@ export class Api {
 
       return res.data;
     } catch (e) {
-      console.warn('Error while fetching prompts...', e);
+      console.warn("Error while fetching prompts...", e);
       return this.getPrompts(amount, idPromptsOnScreen, _retries - 1);
     }
   }
@@ -95,12 +94,12 @@ export class Api {
 
     const userId = await this.getUserId();
 
-    await Api.baseClient
-    .put(
-      config.apiUrl + "/prompt/" + promptId + "/" + action,
-      { used: true },
-      { headers: { "x-user-id": userId } }
-    )
+    await Api.network
+      .put(
+        config.apiUrl + "/prompt/" + promptId + "/" + action,
+        { used: true },
+        { headers: { "x-user-id": userId } }
+      )
       .catch(() => {
         this.promptSeen(promptId, action, _retries - 1);
       });
