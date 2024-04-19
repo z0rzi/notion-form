@@ -1,4 +1,4 @@
-import axios from "axios";
+import NetworkWrapper from "./NetworkWrapper";
 import config from "./config";
 import Cookies from "js-cookie";
 
@@ -11,9 +11,13 @@ export type Prompt = {
 export class Api {
   private static _instance: Api;
   userId = null as number | null;
+  private static network: NetworkWrapper;
 
   static getInstance(): Api {
-    if (!Api._instance) Api._instance = new Api();
+    if (!Api._instance) {
+      this.network = new NetworkWrapper(config.apiUrl);
+      Api._instance = new Api();
+    }
     return Api._instance;
   }
 
@@ -27,7 +31,7 @@ export class Api {
       return this.userId;
     }
 
-    const res = await axios.get(config.apiUrl + "/user-id");
+    const res = await Api.network.get(config.apiUrl + "/user-id");
 
     this.userId = +res.data;
 
@@ -43,8 +47,7 @@ export class Api {
     if (!Array.isArray(prompts)) return false;
 
     for (const prompt of prompts) {
-      if (prompt?.text?.length === 0)
-        return false;
+      if (prompt?.text?.length === 0) return false;
     }
 
     return true;
@@ -65,7 +68,7 @@ export class Api {
     const userId = await this.getUserId();
 
     try {
-      const res = await axios.get(config.apiUrl + "/prompts", {
+      const res = await Api.network.get(config.apiUrl + "/prompts", {
         params: { amount, exclude: idPromptsOnScreen.join(",") },
         headers: { "x-user-id": userId },
       });
@@ -77,7 +80,7 @@ export class Api {
 
       return res.data;
     } catch (e) {
-      console.warn('Error while fetching prompts...', e);
+      console.warn("Error while fetching prompts...", e);
       return this.getPrompts(amount, idPromptsOnScreen, _retries - 1);
     }
   }
@@ -91,7 +94,7 @@ export class Api {
 
     const userId = await this.getUserId();
 
-    await axios
+    await Api.network
       .put(
         config.apiUrl + "/prompt/" + promptId + "/" + action,
         { used: true },
