@@ -1,4 +1,4 @@
-import { getDB } from './Db';
+import Database from "./Db";
 
 export type User = {
     id: number;
@@ -6,11 +6,10 @@ export type User = {
 };
 
 export class UserModel {
-    private db = getDB();
+    private db = Database.getInstance();
 
     private getAllUsers(): User[] {
-        const stmt = this.db.prepare('SELECT * FROM users');
-        const allUsers = stmt.all() as { id: number; prompts: string }[];
+        const allUsers = this.db.all<{ id: number; prompts: string }>('SELECT * FROM users');
         return allUsers.map((rawUser) => {
             return {
                 id: rawUser.id,
@@ -41,13 +40,11 @@ export class UserModel {
         const allUsers = this.getAllUsers();
         const user = allUsers.find((user) => user.id === userId);
         if (!user) {
-            const stmt = this.db.prepare('INSERT INTO users (id, prompts) VALUES (?, ?)');
-            stmt.run(userId, promptId);
+            this.db.run('INSERT INTO users (id, prompts) VALUES (?, ?)', [promptId]);
             return;
         }
 
         user.prompts.push(promptId);
-        const stmt = this.db.prepare('UPDATE users SET prompts = ? WHERE id = ?');
-        stmt.run(user.prompts.join(','), userId);
+        this.db.run('UPDATE users SET prompts = ? WHERE id = ?', [userId]);
     }
 }

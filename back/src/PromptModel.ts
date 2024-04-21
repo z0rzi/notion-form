@@ -1,11 +1,11 @@
-import { getDB } from './Db';
+import Database from './Db';
 import PromptDeamon from './PromptDeamon';
 import { Prompt } from './notion-helper';
 
 type RawPrompt = Prompt;
 
 export class PromptModel {
-    private db = getDB();
+    private db = Database.getInstance();
 
     private deamon = PromptDeamon.getInstance();
 
@@ -17,22 +17,19 @@ export class PromptModel {
      * Get all the prompts from the DB
      */
     getAllPrompts(): Prompt[] {
-        const stmt = this.db.prepare('SELECT * FROM prompts');
-        const prompts = stmt.all();
+        const prompts = this.db.all<Prompt>('SELECT * FROM prompts');
         return prompts.map(this.parseRawPrompt);
     }
 
     getPrompt(id: string): Prompt {
-        const stmt = this.db.prepare('SELECT * FROM prompts WHERE id = ?');
-        const prompt = stmt.get(id) as RawPrompt;
+        const prompt = this.db.get<Prompt>('SELECT * FROM prompts WHERE id = ?', [id]);
         return this.parseRawPrompt(prompt);
     }
 
     usePrompt(id: string): void {
-        const stmt = this.db.prepare(
+        this.db.run(
             'UPDATE prompts SET timesUsed = timesUsed + 1 WHERE id = ?'
         );
-        stmt.run(id);
 
         const prompt = this.getPrompt(id);
 
@@ -40,10 +37,9 @@ export class PromptModel {
     }
 
     skipPrompt(id: string): void {
-        const stmt = this.db.prepare(
+        this.db.run(
             'UPDATE prompts SET timesSkipped = timesSkipped + 1 WHERE id = ?'
         );
-        stmt.run(id);
 
         const prompt = this.getPrompt(id);
 

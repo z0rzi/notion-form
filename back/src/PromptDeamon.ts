@@ -1,4 +1,4 @@
-import { getDB } from './Db';
+import Database from './Db';
 import NotionHelper, { Prompt } from './notion-helper';
 
 export default class PromptDeamon {
@@ -13,7 +13,7 @@ export default class PromptDeamon {
     private constructor() {}
 
     private notionHelper = new NotionHelper();
-    private db = getDB();
+    private db = Database.getInstance();
 
     /**
      * The queue of prompts to update
@@ -61,11 +61,7 @@ export default class PromptDeamon {
      */
     private refreshPromptsDb() {
         this.notionHelper.getAllPrompts().then((prompts) => {
-            this.db.prepare('DELETE FROM prompts').run();
-
-            const stmt = this.db.prepare(
-                'INSERT INTO prompts (id, text, category, timesUsed, timesSkipped) VALUES (?, ?, ?, ?, ?)'
-            );
+            this.db.run('DELETE FROM prompts');
 
             prompts.forEach((prompt) => {
                 const queuePrompt = this.updateQueue.find(
@@ -73,12 +69,15 @@ export default class PromptDeamon {
                 );
                 if (queuePrompt) prompt = queuePrompt;
 
-                stmt.run(
-                    prompt.id,
-                    prompt.text,
-                    prompt.category,
-                    prompt.timesUsed,
-                    prompt.timesSkipped
+                this.db.run(
+                    'INSERT INTO prompts (id, text, category, timesUsed, timesSkipped) VALUES (?, ?, ?, ?, ?)',
+                    [
+                        prompt.id,
+                        prompt.text,
+                        prompt.category,
+                        prompt.timesUsed,
+                        prompt.timesSkipped
+                    ]
                 );
             });
         });

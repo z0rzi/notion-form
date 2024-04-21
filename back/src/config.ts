@@ -24,4 +24,5 @@ loadDotEnv()
 export default {
     notion_secret: process.env.NOTION_SECRET,
     notion_database_id: process.env.NOTION_DB_ID,
+    db_path: path.join(__dirname, '../prompts.sqlite')
 };

@@ -1,20 +1,18 @@
-import Database, { Database as DatabaseType } from 'better-sqlite3';
+import SqliteDB, { Database as SqlDBType } from 'better-sqlite3';
 import fs from 'fs';
-import path from 'path';
+import config from './config';
 
-const dirname = __dirname;
+export function checkDbExistsOnFilesystem(dbPath: string): boolean {
+    if (!dbPath.endsWith('.sqlite')) return false;
+    if (!fs.existsSync(dbPath)) return false;
 
-const dbExists = fs.existsSync(path.join(dirname, '../prompts.sqlite'));
-if (!dbExists) {
-    fs.writeFileSync(path.join(dirname, '../prompts.sqlite'), '');
+    return true;
 }
 
-const db = new Database(
-    path.join(dirname, '../prompts.sqlite'),
-    // { verbose: console.log }
-);
-
-function isDbReady(): boolean {
+/**
+ * Indicates if the Db is ready for use, meaning the structure is correct.
+ */
+export function isDbReady(db: SqlDBType): boolean {
     try {
         const stmt = db.prepare('SELECT * FROM prompts');
         stmt.run();
@@ -26,22 +24,86 @@ function isDbReady(): boolean {
     return true;
 }
 
-/**
- * Reloads all the prompts, but keeps the users.
- */
-export function resetDb() {
-    const schema_txt = fs.readFileSync(
-        path.join(dirname, '../db-schema.sql'),
-        { encoding: 'utf8' }
-    );
-    db.exec(schema_txt);
-}
+export type DbQueryParams = (string | Date | boolean | number | null);
 
-let dbIsReady = false;
-export function getDB(): DatabaseType {
-    if (!dbIsReady && !isDbReady()) {
-        resetDb();
-        dbIsReady = true;
+export default class Database {
+    private static instance: Database;
+    private db: SqlDBType;
+
+    private constructor(private readonly dbPath: string) {
+        if (!checkDbExistsOnFilesystem(dbPath)) {
+            console.log('Database file does not exist. Creating a new one.');
+            fs.writeFileSync(dbPath, '');
+        }
+
+        this.db = new SqliteDB(dbPath);
+        if (!isDbReady(this.db)) {
+            this.buildSchema();
+        }
     }
-    return db;
+
+    public static getInstance(dbPath = config.db_path): Database {
+        if (!Database.instance) {
+            Database.instance = new Database(dbPath);
+        }
+
+        if (dbPath !== Database.instance.dbPath) {
+            throw new Error('Cannot create a new instance with a different path');
+        }
+
+        return Database.instance;
+    }
+
+    all<T = unknown>(query: string, params: DbQueryParams[] = []): T[] {
+        return this.db.prepare(query).all(...params) as T[];
+    }
+
+    get<T>(query: string, params: DbQueryParams[] = []): T {
+        return this.db.prepare(query).get(...params) as T;
+    }
+
+    run(query: string, params: DbQueryParams[] = []): void {
+        this.db.prepare(query).run(...params);
+    }
+
+    /**
+     * Reloads all the prompts, but keeps the users.
+     */
+    clearPrompts() {
+        const sqlQuery = `
+            DROP TABLE IF EXISTS prompts;
+
+            CREATE TABLE IF NOT EXISTS prompts (
+                id text PRIMARY KEY,
+                text text NOT NULL,
+                category text,
+                timesUsed number,
+                timesSkipped number
+            );
+        `;
+
+        this.db.exec(sqlQuery);
+    }
+
+    buildSchema() {
+        const sqlQuery = `
+            DROP TABLE IF EXISTS prompts;
+            DROP TABLE IF EXISTS users;
+
+            CREATE TABLE IF NOT EXISTS prompts (
+                id text PRIMARY KEY,
+                text text NOT NULL,
+                category text,
+                timesUsed number,
+                timesSkipped number
+            );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id number PRIMARY KEY,
+                prompts text
+            );
+        `;
+
+        this.db.exec(sqlQuery);
+    }
 }

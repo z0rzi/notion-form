@@ -2,7 +2,7 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 import routes from './routes';
 import PromptDeamon from './PromptDeamon';
-import { resetDb } from './Db';
+import Db from './Db';
 
 const app = express();
 
@@ -23,7 +23,7 @@ app.use(routes);
 const deamon = PromptDeamon.getInstance();
 deamon.run();
 
-resetDb();
+Db.getInstance().clearPrompts();
 
 const port = 8080;
 
