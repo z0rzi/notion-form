@@ -22,10 +22,6 @@ app.use((req: Request, _res: Response, next) => {
 
 app.use('/api', routes);
 
-// app.use('/', useProxyIfDev(), (_req, res) => {
-//     console.log('holaaaa');
-//     res.sendFile(path.join(__dirname, '..', 'public', '/index.html'));
-// });
 app.use(useProxyIfDev(), express.static(path.join('public')));
 
 const deamon = PromptDeamon.getInstance();
