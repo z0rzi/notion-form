@@ -33,9 +33,7 @@ app.use(
     '/',
     (_req, res, next) => {
         if (
-            process.env.NODE_ENV &&
             process.env.NODE_ENV === 'development' &&
-            process.env.USE_VITE_SERVER &&
             process.env.USE_VITE_SERVER === 'true'
         ) {
             return next();
