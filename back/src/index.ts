@@ -2,7 +2,9 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 import routes from './routes';
 import PromptDeamon from './PromptDeamon';
+import path from 'path';
 import { resetDb } from './Db';
+import { useProxyIfDev } from './devProxy';
 
 const app = express();
 
@@ -18,7 +20,9 @@ app.use((req: Request, _res: Response, next) => {
     next();
 });
 
-app.use(routes);
+app.use('/api', routes);
+
+app.use(useProxyIfDev(), express.static(path.join('public')));
 
 const deamon = PromptDeamon.getInstance();
 deamon.run();
