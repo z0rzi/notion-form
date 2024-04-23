@@ -1,8 +1,8 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
-import routes from './routes';
-import PromptDeamon from './PromptDeamon';
-import { resetDb } from './Db';
+import routes from './routes//routes';
+import PromptDeamon from './util/business-helpers/PromptDeamon';
+import { resetDb } from './database/Db';
 
 const app = express();
 

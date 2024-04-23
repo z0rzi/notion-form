@@ -1,4 +1,4 @@
-import { getDB } from './Db';
+import { getDB } from '../../database/Db';
 
 export type User = {
     id: number;

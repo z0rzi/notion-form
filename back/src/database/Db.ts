@@ -4,13 +4,13 @@ import path from 'path';
 
 const dirname = __dirname;
 
-const dbExists = fs.existsSync(path.join(dirname, '../prompts.sqlite'));
+const dbExists = fs.existsSync(path.join(dirname, '../../prompts.sqlite'));
 if (!dbExists) {
-    fs.writeFileSync(path.join(dirname, '../prompts.sqlite'), '');
+    fs.writeFileSync(path.join(dirname, '../../prompts.sqlite'), '');
 }
 
 const db = new Database(
-    path.join(dirname, '../prompts.sqlite'),
+    path.join(dirname, '../../prompts.sqlite'),
     // { verbose: console.log }
 );
 
@@ -31,7 +31,7 @@ function isDbReady(): boolean {
  */
 export function resetDb() {
     const schema_txt = fs.readFileSync(
-        path.join(dirname, '../db-schema.sql'),
+        path.join(dirname, '../../db-schema.sql'),
         { encoding: 'utf8' }
     );
     db.exec(schema_txt);

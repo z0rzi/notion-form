@@ -2,7 +2,7 @@ import { Component, Show, createEffect, createSignal } from "solid-js";
 import { styled } from "solid-styled-components";
 
 import Card from "./Card";
-import { Api, Prompt } from "./api";
+import { Api, Prompt } from "../util/api";
 
 const PROMPT_TRANSITION_DURATION = 300;
 
