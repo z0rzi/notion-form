@@ -1,6 +1,6 @@
 import { createEffect } from "solid-js";
 import { styled } from "solid-styled-components";
-import { Prompt } from "./api";
+import { Prompt } from "../util/api";
 
 const categoriesColors: Record<string, string> = {
   default: "#11202F",
