@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { PromptModel } from './PromptModel';
-import { UserModel } from './UserModel';
+import { PromptModel } from '../util/business-helpers/PromptModel';
+import { UserModel } from '../util/business-helpers/UserModel';
 
 const routes = express.Router();
 

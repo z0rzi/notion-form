@@ -1,4 +1,4 @@
-import { getDB } from './Db';
+import { getDB } from '../../database/Db';
 import PromptDeamon from './PromptDeamon';
 import { Prompt } from './notion-helper';
 

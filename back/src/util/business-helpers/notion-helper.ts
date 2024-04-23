@@ -1,5 +1,5 @@
 import { Client } from '@notionhq/client';
-import config from './config';
+import config from '../config';
 import { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 type NotionProperty = {
